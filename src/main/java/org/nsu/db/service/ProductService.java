@@ -1,15 +1,11 @@
 package org.nsu.db.service;
 
-import org.nsu.db.Entity.AttributeValueEntity;
-import org.nsu.db.Entity.ProductEntity;
-import org.nsu.db.Entity.ProductTypeAttributeEntity;
-import org.nsu.db.Entity.ProductTypeEntity;
+import org.aspectj.weaver.loadtime.Options;
+import org.nsu.db.Entity.*;
 import org.nsu.db.Exception.EntityNotFoundException;
+import org.nsu.db.Model.ProductCycleStepModel;
 import org.nsu.db.Model.ProductModel;
-import org.nsu.db.Repo.AttributeValueRepo;
-import org.nsu.db.Repo.ProductRepo;
-import org.nsu.db.Repo.ProductTypeAttributeRepo;
-import org.nsu.db.Repo.ProductTypeRepo;
+import org.nsu.db.Repo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
@@ -27,15 +23,21 @@ public class ProductService {
     ProductTypeRepo productTypeRepo;
     ProductTypeAttributeRepo productTypeAttributeRepo;
     AttributeValueRepo attributeValueRepo;
+    ProductCycleRepo productCycleRepo;
+    SectorRepo sectorRepo;
 
     @Autowired
     public ProductService(ProductRepo productRepo, ProductTypeRepo productTypeRepo,
                           ProductTypeAttributeRepo productTypeAttributeRepo,
-                          AttributeValueRepo attributeValueRepo){
+                          AttributeValueRepo attributeValueRepo,
+                          ProductCycleRepo productCycleRepo,
+                          SectorRepo sectorRepo){
         this.productRepo = productRepo;
         this.productTypeRepo = productTypeRepo;
         this.productTypeAttributeRepo = productTypeAttributeRepo;
         this.attributeValueRepo = attributeValueRepo;
+        this.productCycleRepo = productCycleRepo;
+        this.sectorRepo = sectorRepo;
     }
 
     public ResponseEntity<?> get_product(Optional<String> productName){
@@ -120,5 +122,55 @@ public class ProductService {
         }
 
         return productModel;
+    }
+
+    @Transactional
+    public ResponseEntity<?> add_product_cycle(List<ProductCycleStepModel> productCycleStepModelList,
+                                               String productName){
+        Optional<ProductEntity> productEntity = productRepo.findByName(productName);
+        if(productEntity.isEmpty()){
+            return new ResponseEntity<>("Product " + productName + " does not exists", HttpStatus.BAD_REQUEST);
+        }
+
+        if(productCycleRepo.existsByProductId(productEntity.get().getProductId())){
+            return new ResponseEntity<>("Product cycle for " + productName
+                    + " already exist",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        List<ProductCycleEntity> productCycleEntityList = new ArrayList<>();
+        Integer workshopId = productEntity.get().getWorkshopId();
+        int step = 1;
+        for(var it : productCycleStepModelList){
+            if(!sectorRepo.existsById(it.getSectorId())){
+                return new ResponseEntity<>("SectorId: " + it.getSectorId()
+                    + " does not exist", HttpStatus.BAD_REQUEST);
+            }
+
+            if(workshopId != sectorRepo.findById(it.getSectorId()).get().getWorkshopId()){
+                return new ResponseEntity<>("Product can not manufacture in several workshops",
+                        HttpStatus.BAD_REQUEST);
+            }
+            ProductCycleEntity productCycleEntity = new ProductCycleEntity();
+            productCycleEntity.setProductId(productEntity.get().getProductId());
+            productCycleEntity.setSectorId(it.getSectorId());
+            productCycleEntity.setStep(step);
+            ++step;
+            productCycleEntityList.add(productCycleEntity);
+        }
+        productCycleRepo.saveAll(productCycleEntityList);
+        return new ResponseEntity<>("Success", HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity<?> delete_product_cycle(String productName){
+        Optional<ProductEntity> productEntity = productRepo.findByName(productName);
+        if(productEntity.isEmpty()){
+            return new ResponseEntity<>("Product " + productName + " does not exists",
+                    HttpStatus.BAD_REQUEST);
+        }
+        productCycleRepo.deleteAllByProductId(productEntity.get().getProductId());
+
+        return new ResponseEntity<>("Success", HttpStatus.OK);
     }
 }

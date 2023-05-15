@@ -57,4 +57,5 @@ public class StaffController {
         staffRepo.deleteById(personId);
         return new ResponseEntity<>("Success", HttpStatus.OK);
     }
+
 }

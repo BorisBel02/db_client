@@ -85,10 +85,9 @@ public class LabController {
 
     @GetMapping("/test/get")
     public ResponseEntity<?> get_test(@RequestParam(required = false) Optional<String> testName){
-        if(testName.isPresent()){
-            return new ResponseEntity<>(testRepo.findByTestName(testName.get()), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(testRepo.findAll(), HttpStatus.OK);
+        return testName.map(s ->
+                new ResponseEntity<>(testRepo.findAllByTestName(s), HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(testRepo.findAll(), HttpStatus.OK));
     }
 
     @PostMapping("/test/add")
