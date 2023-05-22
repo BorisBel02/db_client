@@ -41,6 +41,61 @@ public class StaffController {
         );
         return new ResponseEntity<>(staffService.convertStaffEntityList(staffEntities), HttpStatus.OK);
     }
+    @GetMapping("/get_by_occupation")
+    public ResponseEntity<?> get_by_occupation(@RequestParam(name = "occupations") List<String> occupations){
+        return new ResponseEntity<>(staffRepo.findAllByOccupation(occupations), HttpStatus.OK);
+    }
+    @GetMapping("/get_sectors_with_supervisors")
+    public ResponseEntity<?> get_sectors_with_supervisors(){
+        return new ResponseEntity<>(staffRepo.findAllSectorsWithSupervisors(), HttpStatus.OK);
+    }
+    @GetMapping("/get_sectors_with_supervisors_by_workshop_id")
+    public ResponseEntity<?> get_sectors_with_supervisors_by_workshop_id(
+            @RequestParam Integer workshopId){
+        return new ResponseEntity<>(staffRepo.findAllSectorsWithSupervisorsByWorkshop(workshopId),
+                HttpStatus.OK);
+    }
+    @GetMapping("get_brigades_by_workshop_id")
+    public ResponseEntity<?> get_brigades_by_workshop_id(@RequestParam Integer workshopId){
+        return new ResponseEntity<>(staffRepo.findBrigadeStaffByWorkshopId(workshopId), HttpStatus.OK);
+    }
+    @GetMapping("get_brigades_by_sector_id")
+    public ResponseEntity<?> get_brigades_by_sector_id(@RequestParam Integer sectorId){
+        return new ResponseEntity<>(staffRepo.findBrigadeStaffBySectorId(sectorId), HttpStatus.OK);
+    }
+    @GetMapping("brigades_by_product_in_progress")
+    public ResponseEntity<?> brigades_by_product_in_progress(@RequestParam String name){
+        return new ResponseEntity<>(staffRepo.findBrigadeStaffInProductCreation(name),
+                HttpStatus.OK);
+    }
+    @GetMapping("get_masters_by_workshop_id")
+    public ResponseEntity<?> get_masters_by_workshop_id(@RequestParam Integer workshopId){
+        return new ResponseEntity<>(staffRepo.findMastersByWorkshop(workshopId), HttpStatus.OK);
+    }
+    @GetMapping("get_masters_by_sector_id")
+    public ResponseEntity<?> get_masters_by_sector_id(@RequestParam Integer sectorId){
+        return new ResponseEntity<>(staffRepo.findMastersBySector(sectorId), HttpStatus.OK);
+    }
+    @GetMapping("get_products_in_progress")
+    public ResponseEntity<?> get_products_in_progress(){
+        return new
+                ResponseEntity<>(staffRepo.findAllProductsInProgress(),
+                HttpStatus.OK);
+    }
+    @GetMapping("get_products_in_progress_by_workshop_id")
+    public ResponseEntity<?> get_products_in_progress_by_workshop_id(
+            @RequestParam Integer workshopId){
+        return new
+                ResponseEntity<>(staffRepo.findAllProductsInProgressByWorkshop(workshopId),
+                HttpStatus.OK);
+    }
+    @GetMapping("get_products_in_progress_by_sector_id")
+    public ResponseEntity<?> get_products_in_progress_by_sector_id(
+            @RequestParam Integer sectorId){
+        return new
+                ResponseEntity<>(staffRepo.findAllProductsInProgressBySector(sectorId),
+                HttpStatus.OK);
+    }
 
     @PostMapping("/add_worker")
     public ResponseEntity<?> add_worker(@RequestBody StaffModel staffModel, @RequestParam Integer brigadeId){
@@ -48,7 +103,9 @@ public class StaffController {
     }
     @PostMapping("/add_engineer")
     public ResponseEntity<?> add_engineer(@RequestBody StaffModel staffModel,
-                                          @RequestParam("name=supervisor") Optional<Integer> supervisorId){
+                                          @RequestParam(value = "name=supervisor",
+                                                  required = false)
+                                            Optional<Integer> supervisorId){    //if supervisor is  present then engineer is master
         return new ResponseEntity<>(staffService.add_engineer(staffModel, supervisorId), HttpStatus.OK);
     }
 
